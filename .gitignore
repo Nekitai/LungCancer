@@ -6,3 +6,7 @@
 .env.production
 node_modules/
 .next/
+
+# Menyembunyikan file teks terkait struktur
+strukturbackend.txt
+*struktur*.txt
