@@ -191,7 +191,7 @@ def health():
         }
 
 
-@app.post("/predict", response_model=PredictResponse)
+@app.post("/api/predict", response_model=PredictResponse)
 def predict(payload: PredictRequest):
 
     # Memastikan model sudah dimuat
