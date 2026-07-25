@@ -2,7 +2,9 @@ import axios, { AxiosError } from "axios";
 import type { PatientFormValues } from "@/lib/validations";
 import type { PredictRequestPayload, PredictResponse } from "@/types/prediction";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "/api";
+const BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL ??
+  "/api/backend";
 
 export const apiClient = axios.create({
   baseURL: BASE_URL,
