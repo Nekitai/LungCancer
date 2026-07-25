@@ -1,8 +1,7 @@
 {
-  "version": 2,
   "functions": {
     "backend/api/index.py": {
-      "runtime": "python3.11"
+      "runtime": "@vercel/python"
     }
   },
   "rewrites": [
