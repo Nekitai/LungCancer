@@ -14,7 +14,7 @@ MODEL_PATH to wherever it lives.
 
 import os
 import logging
-from typing import Literal
+from typing import Literal, Any, cast
 
 import joblib
 import numpy as np
@@ -27,12 +27,22 @@ from pydantic import BaseModel, Field
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("ai-lungcare-api")
 
-MODEL_PATH = os.environ.get(
-    "MODEL_PATH", os.path.join(os.path.dirname(__file__), "model", "best_rf_lung_cancer_model.pkl")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+MODEL_PATH = os.getenv(
+    "MODEL_PATH",
+    os.path.join(
+        BASE_DIR,
+        "model",
+        "best_rf_lung_cancer_model.pkl"
+    )
 )
 
 # Comma-separated list of allowed origins, e.g. "http://localhost:3000,https://myapp.com"
-ALLOWED_ORIGINS = os.environ.get("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
+ALLOWED_ORIGINS = os.getenv(
+    "ALLOWED_ORIGINS",
+    "*"
+).split(",")
 
 app = FastAPI(
     title="AI LungCare Prediction API",
@@ -56,24 +66,35 @@ feature_names: list[str] = []
 explainer = None
 
 
-@app.on_event("startup")
-def load_model() -> None:
+
+def load_model():
     global model, feature_names, explainer
 
-    if not os.path.exists(MODEL_PATH):
-        logger.warning(
-            "Model file not found at %s. Copy your saved best_rf_lung_cancer_model.pkl "
-            "there, or set the MODEL_PATH environment variable.",
-            MODEL_PATH,
-        )
+    if model is not None:
         return
 
-    bundle = joblib.load(MODEL_PATH)
-    model = bundle["model"]
-    feature_names = bundle["feature_names"]
-    explainer = shap.TreeExplainer(model)
-    logger.info("Model loaded from %s. Features (%d): %s", MODEL_PATH, len(feature_names), feature_names)
+    if not os.path.exists(MODEL_PATH):
+        raise HTTPException(
+            status_code=500,
+            detail=f"Model tidak ditemukan di {MODEL_PATH}"
+        )
 
+    try:
+        bundle = joblib.load(MODEL_PATH)
+
+        model = bundle["model"]
+        feature_names = bundle["feature_names"]
+        explainer = shap.TreeExplainer(model)
+
+        logger.info("Model berhasil dimuat")
+
+    except Exception as e:
+        logger.exception("Gagal memuat model")
+
+        raise HTTPException(
+            status_code=500,
+            detail=f"Gagal memuat model: {str(e)}"
+        )
 
 # --------------------------------------------------------------------------
 # Request / response schemas — field names match src/services/api.ts on the
@@ -153,30 +174,65 @@ DISPLAY_NAME = {
 
 @app.get("/health")
 def health():
-    return {"status": "ok" if model is not None else "model_not_loaded", "model_path": MODEL_PATH}
+    try:
+        load_model()
+
+        return {
+            "status": "ok",
+            "model_loaded": True
+        }
+
+    except Exception as e:
+
+        return {
+            "status": "error",
+            "model_loaded": False,
+            "detail": str(e)
+        }
 
 
 @app.post("/predict", response_model=PredictResponse)
 def predict(payload: PredictRequest):
-    if model is None:
+
+    # Memastikan model sudah dimuat
+    load_model()
+
+    if model is None or explainer is None:
         raise HTTPException(
-            status_code=503,
-            detail=f"Model belum dimuat. Pastikan file model ada di {MODEL_PATH}.",
+            status_code=500,
+            detail="Model atau SHAP explainer belum berhasil dimuat."
         )
 
-    row = {FIELD_TO_COLUMN[key]: value for key, value in payload.model_dump().items()}
-    # Order columns exactly as the model expects (bundle["feature_names"]).
+    # Memberitahu type checker bahwa model dan explainer bukan None
+    rf_model = cast(Any, model)
+    shap_explainer = cast(Any, explainer)
+
+    # Konversi payload menjadi DataFrame sesuai urutan feature model
+    row = {
+        FIELD_TO_COLUMN[key]: value
+        for key, value in payload.model_dump().items()
+    }
+
     X_new = pd.DataFrame([row])[feature_names]
 
-    proba = model.predict_proba(X_new)[0]  # [P(class 0), P(class 1)]
-    prob_negative, prob_positive = float(proba[0]), float(proba[1])
-    prediction: Literal["High Risk", "Low Risk"] = "High Risk" if prob_positive >= 0.5 else "Low Risk"
+    # Prediksi probabilitas
+    proba = rf_model.predict_proba(X_new)[0]
+
+    prob_negative = float(proba[0])
+    prob_positive = float(proba[1])
+
+    prediction: Literal["High Risk", "Low Risk"] = (
+        "High Risk" if prob_positive >= 0.5 else "Low Risk"
+    )
+
     confidence = max(prob_positive, prob_negative) * 100
 
-    # Local SHAP explanation for this single patient.
-    shap_values = explainer.shap_values(X_new, check_additivity=False)
-    # TreeExplainer on a binary classifier RF may return a 3D array
-    # (n_samples, n_features, n_classes) or a list [class0, class1].
+    # SHAP Explanation
+    shap_values = shap_explainer.shap_values(
+        X_new,
+        check_additivity=False
+    )
+
     if isinstance(shap_values, list):
         values = shap_values[1][0]
     elif np.ndim(shap_values) == 3:
@@ -184,8 +240,16 @@ def predict(payload: PredictRequest):
     else:
         values = shap_values[0]
 
-    ranked = sorted(zip(feature_names, values), key=lambda pair: abs(pair[1]), reverse=True)
-    top_features = [DISPLAY_NAME.get(name, name) for name, _ in ranked[:5]]
+    ranked = sorted(
+        zip(feature_names, values),
+        key=lambda pair: abs(pair[1]),
+        reverse=True,
+    )
+
+    top_features = [
+        DISPLAY_NAME.get(name, name)
+        for name, _ in ranked[:5]
+    ]
 
     return PredictResponse(
         prediction=prediction,
