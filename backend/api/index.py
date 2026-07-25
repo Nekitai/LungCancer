@@ -1,3 +1,6 @@
-from main import app
+import os
+import sys
 
-# Vercel akan menggunakan objek app ini
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+
+from main import app
