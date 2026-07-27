@@ -7,7 +7,7 @@ import {
   AccordionTrigger,
   AccordionContent,
 } from "@/components/ui/accordion";
-import { MODEL_METRICS } from "@/components/metric-cards";
+import { MODEL_METRICS } from "@/lib/constants";
 
 const MODEL_CARDS = [
   {

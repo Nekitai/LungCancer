@@ -10,8 +10,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import Image from "next/image";
 
 const NAV_LINKS = [
-  { href: "/", label: "Beranda" },
-  { href: "/prediction", label: "Prediksi" },
+  { href: "/", label: "Prediksi" },
   { href: "/about", label: "Tentang Model" },
 ];
 
@@ -41,7 +40,7 @@ export function Navbar() {
 
         <div className="hidden items-center gap-1 md:flex">
           <Button variant="ghost" size="icon" asChild aria-label="Repositori GitHub">
-            <a href="https://github.com" target="_blank" rel="noreferrer">
+            <a href="https://github.com/Nekitai/LungCancer" target="_blank" rel="noreferrer">
               <Github className="size-4" />
             </a>
           </Button>
@@ -66,7 +65,7 @@ export function Navbar() {
                     {link.label}
                   </Link>
                 ))}
-                <a href="https://github.com" target="_blank" rel="noreferrer" className="mt-2 flex items-center gap-2 rounded-lg px-4 py-3 text-sm font-medium text-muted hover:bg-primary/5">
+                <a href="https://github.com/Nekitai/LungCancer" target="_blank" rel="noreferrer" className="mt-2 flex items-center gap-2 rounded-lg px-4 py-3 text-sm font-medium text-muted hover:bg-primary/5">
                   <Github className="size-4" /> GitHub
                 </a>
               </nav>

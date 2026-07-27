@@ -3,18 +3,7 @@
 import { motion } from "framer-motion";
 import { Target, Crosshair, Radar, LineChart } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import type { ModelMetrics } from "@/types/prediction";
-
-/**
- * Real evaluation results from the GridSearchCV-tuned Random Forest,
- * measured on the held-out 20% test split (1,000 pasien).
- */
-export const MODEL_METRICS: ModelMetrics = {
-  accuracy: 0.91,
-  precision: 0.89,
-  recall: 0.88,
-  rocAuc: 0.9213,
-};
+import { MODEL_METRICS } from "@/lib/constants"; // Import dari file constants
 
 const METRICS = [
   { key: "accuracy", label: "Accuracy", icon: Target, value: MODEL_METRICS.accuracy },
@@ -22,7 +11,6 @@ const METRICS = [
   { key: "recall", label: "Recall", icon: Radar, value: MODEL_METRICS.recall },
   { key: "rocauc", label: "ROC AUC", icon: LineChart, value: MODEL_METRICS.rocAuc },
 ];
-
 export function MetricCards() {
   return (
     <section className="mx-auto max-w-6xl px-4 pb-20 sm:px-6 lg:px-8">

@@ -1,12 +1,10 @@
-import { Activity } from "lucide-react";
+import Image from "next/image";
 
 export function Footer() {
   return (
     <footer className="border-t border-border bg-background">
       <div className="mx-auto flex max-w-6xl flex-col items-center gap-3 px-4 py-10 text-center sm:px-6 lg:px-8">
-        <span className="flex size-9 items-center justify-center rounded-xl bg-primary text-white">
-          <Activity className="size-4" />
-        </span>
+        <Image src="/images/logo.jpeg" alt="Logo Universitas Teknologi AKBA Makassar" width={48} height={48} className="rounded-full" priority />
         <p className="font-display text-sm font-semibold">Lung Cancer</p>
         <p className="max-w-md text-xs leading-relaxed text-muted">
           Universitas Teknologi AKBA Makassar &middot; Teknik Informatika
